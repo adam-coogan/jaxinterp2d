@@ -5,7 +5,12 @@ __all__ = ["interp2d"]
 
 
 def interp2d(
-    x: jnp.ndarray, y: jnp.ndarray, xp: jnp.ndarray, yp: jnp.ndarray, zp: jnp.ndarray
+    x: jnp.ndarray,
+    y: jnp.ndarray,
+    xp: jnp.ndarray,
+    yp: jnp.ndarray,
+    zp: jnp.ndarray,
+    fill_value: jnp.ndarray = None,
 ) -> jnp.ndarray:
     """
     Bilinear interpolation on a grid.
@@ -42,6 +47,12 @@ def interp2d(
         xp[ix] - xp[ix - 1]
     ) * z_22
 
-    return (yp[iy] - y) / (yp[iy] - yp[iy - 1]) * z_xy1 + (y - yp[iy - 1]) / (
+    z = (yp[iy] - y) / (yp[iy] - yp[iy - 1]) * z_xy1 + (y - yp[iy - 1]) / (
         yp[iy] - yp[iy - 1]
     ) * z_xy2
+
+    if fill_value is not None:
+        oob = (x < xp[0]) | (x > xp[-1]) | (y < yp[0]) | (y > yp[-1])
+        z = jnp.where(oob, fill_value, z)
+
+    return z
