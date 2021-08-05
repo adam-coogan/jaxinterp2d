@@ -5,10 +5,10 @@ Basic bilinear interpolation on grids with jax. This package provides one functi
 
 ## Getting started
 
-Install with
+Install by cloning the repository and running
 
 ```bash
-pip install jaxinterp2d
+pip install .
 ```
 
 This will install jax and jaxlib if you don't already have them. The test
