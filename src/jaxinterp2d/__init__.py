@@ -1,3 +1,5 @@
+from typing import Optional
+
 import jax.numpy as jnp
 
 
@@ -10,7 +12,7 @@ def interp2d(
     xp: jnp.ndarray,
     yp: jnp.ndarray,
     zp: jnp.ndarray,
-    fill_value: jnp.ndarray = None,
+    fill_value: Optional[jnp.ndarray] = None,
 ) -> jnp.ndarray:
     """
     Bilinear interpolation on a grid.
@@ -52,7 +54,9 @@ def interp2d(
     ) * z_xy2
 
     if fill_value is not None:
-        oob = (x < xp[0]) | (x > xp[-1]) | (y < yp[0]) | (y > yp[-1])
+        oob = jnp.logical_or(
+            x < xp[0], jnp.logical_or(x > xp[-1], jnp.logical_or(y < yp[0], y > yp[-1]))
+        )
         z = jnp.where(oob, fill_value, z)
 
     return z
