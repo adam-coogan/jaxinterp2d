@@ -1,21 +1,24 @@
-from typing import Optional
+from typing import Iterable, Optional
 
 import jax.numpy as jnp
+from jax.scipy.ndimage import map_coordinates
 
 
-__all__ = ["interp2d"]
+__all__ = ["interp2d", "CartesianGrid"]
+Array = jnp.ndarray
 
 
 def interp2d(
-    x: jnp.ndarray,
-    y: jnp.ndarray,
-    xp: jnp.ndarray,
-    yp: jnp.ndarray,
-    zp: jnp.ndarray,
-    fill_value: Optional[jnp.ndarray] = None,
-) -> jnp.ndarray:
+    x: Array,
+    y: Array,
+    xp: Array,
+    yp: Array,
+    zp: Array,
+    fill_value: Optional[Array] = None,
+) -> Array:
     """
-    Bilinear interpolation on a grid.
+    Bilinear interpolation on a grid. ``CartesianGrid`` is much faster if the data
+    lies on a regular grid.
 
     Args:
         x, y: 1D arrays of point at which to interpolate. Any out-of-bounds
@@ -60,3 +63,67 @@ def interp2d(
         z = jnp.where(oob, fill_value, z)
 
     return z
+
+
+class CartesianGrid:
+    """
+    Linear Multivariate Cartesian Grid interpolation in arbitrary dimensions. Based
+    on ``map_coordinates``.
+
+    Notes:
+        Translated directly from https://github.com/JohannesBuchner/regulargrid/ to jax.
+    """
+
+    values: Array
+    """
+    Values to interpolate.
+    """
+    limits: Iterable[Iterable[float]]
+    """
+    Limits along each dimension of ``values``.
+    """
+
+    def __init__(
+        self,
+        limits: Iterable[Iterable[float]],
+        values: Array,
+        mode: str = "constant",
+        cval: float = jnp.nan,
+    ):
+        """
+        Initializer.
+
+        Args:
+            limits: collection of pairs specifying limits of input variables along
+                each dimension of ``values``
+            values: values to interpolate. These must be defined on a regular grid.
+            mode: how to handle out of bounds arguments; see docs for ``map_coordinates``
+            cval: constant fill value; see docs for ``map_coordinates``
+        """
+        super().__init__()
+        self.values = values
+        self.limits = limits
+        self.mode = mode
+        self.cval = cval
+
+    def __call__(self, *coords) -> Array:
+        """
+        Perform interpolation.
+
+        Args:
+            coords: point at which to interpolate. These will be broadcasted if
+                they are not the same shape.
+
+        Returns:
+            Interpolated values, with extrapolation handled according to ``mode``.
+        """
+        # transform coords into pixel values
+        coords = jnp.broadcast_arrays(*coords)
+        # coords = jnp.asarray(coords)
+        coords = [
+            (c - lo) * (n - 1) / (hi - lo)
+            for (lo, hi), c, n in zip(self.limits, coords, self.values.shape)
+        ]
+        return map_coordinates(
+            self.values, coords, mode=self.mode, cval=self.cval, order=1
+        )
