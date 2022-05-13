@@ -12,6 +12,12 @@ Install by cloning the repository and running
 pip install .
 ```
 
+You can install this directly via
+
+```bash
+python -m pip install git+https://github.com/adam-coogan/jaxinterp2d.git@master
+```
+
 This will install jax and jaxlib if you don't already have them. The test
 requires numpy and can be run with `pytest`. Check them out for a usage example
 for `interp2d`.
